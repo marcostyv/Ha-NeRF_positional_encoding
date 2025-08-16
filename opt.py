@@ -121,5 +121,10 @@ def get_opts():
                         help='experiment name')
     parser.add_argument('--refresh_every', type=int, default=1,
                         help='print the progress bar every X steps')
+    
+    ############# -------------- Para el tipo del embedding de posición -----------------
+    parser.add_argument('--embedding_type', type=str, default='sin_cos',
+	choices=['sin_cos','sin_4', 'tri', 'tri_2', 'square', 'square_2', 'tri_square', 'sin_tri_square', 'tri_3','square_3', 'sin_tri_tri_2', 'sin_tri','sin_tri_4','tri_4'],
+	help='Tipo de embedding a usar: normal (sin/cos), tri, tri_2, tri_3, etc.')
 
     return parser.parse_args()

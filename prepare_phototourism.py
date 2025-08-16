@@ -20,6 +20,7 @@ if __name__ == '__main__':
     os.makedirs(os.path.join(args.root_dir, 'cache'), exist_ok=True)
     print(f'Preparing cache for scale {args.img_downscale}...')
     dataset = PhototourismDataset(args.root_dir, 'train', args.img_downscale)
+    
     # save img ids
     with open(os.path.join(args.root_dir, f'cache/img_ids.pkl'), 'wb') as f:
         pickle.dump(dataset.img_ids, f, pickle.HIGHEST_PROTOCOL)

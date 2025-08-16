@@ -1,5 +1,6 @@
-import torch
 import os
+import torch
+
 import numpy as np
 from collections import defaultdict
 from tqdm import tqdm
@@ -51,6 +52,11 @@ def get_opts():
                         help='whether to encode appearance')
     parser.add_argument('--N_a', type=int, default=48,
                         help='number of embeddings for appearance')
+    
+    ### ------------------------------ Parámetros de positional embedding ----------------------------
+    parser.add_argument('--embedding_type', type=str, default='sin_cos',
+                    help='Tipo de codificaciOn posicional: sin_cos, tri, tri_2, square, square_2, tri_square')
+
 
     return parser.parse_args()
 
@@ -179,20 +185,51 @@ if __name__ == "__main__":
     args = get_opts()
     dataset = PhototourismDataset()
 
-    embedding_xyz = PosEmbedding(args.N_emb_xyz-1, args.N_emb_xyz)
-    embedding_dir = PosEmbedding(args.N_emb_dir-1, args.N_emb_dir)
+    ## ------------- Parte que cambia el embedding según argumento de entrada -------------
+
+    embedding_funcs_dict = { 
+        'sin_cos': [torch.sin, torch.cos],
+        'sin_4': [torch.sin,torch.cos, sin_shifted_pi, sin_shifted_3pi2],
+        'tri': [tri],
+        'tri_2': [tri, tri_shifted],
+        'square': [square],
+        'square_2': [square, square_shifted],
+        'tri_square': [tri, square],
+        'tri_3': [tri, tri_shifted, tri_shifted_pi], 
+        'square_3': [square, square_shifted, square_shifted_pi], 
+        'sin_tri_square': [torch.sin, tri, square],
+        'sin_tri_tri_2': [torch.sin, tri, tri_shifted],
+        'sin_tri': [torch.sin, tri],
+        'sin_tri_4': [torch.sin,torch.cos,tri,tri_shifted],
+        'tri_4': [tri, tri_shifted, tri_shifted_pi, tri_shifted_3pi2]
+    }
+
+    if args.embedding_type not in embedding_funcs_dict: 
+        raise ValueError(f"Embedding {args.embedding_type} no valido")
+
+    funcs = embedding_funcs_dict[args.embedding_type] 
+
+    embedding_xyz = PosEmbedding(args.N_emb_xyz-1, args.N_emb_xyz, funcs=funcs) 
+    embedding_dir = PosEmbedding(args.N_emb_dir-1, args.N_emb_dir, funcs=funcs)
+
     embeddings = {'xyz': embedding_xyz, 'dir': embedding_dir}
  
+    n_funcs = len(funcs) 
+    in_channels_xyz = 3 + 3 * n_funcs * args.N_emb_xyz 
+    in_channels_dir = 3 + 3 * n_funcs * args.N_emb_dir
+
+    ##-------------------------------------------------------------------------------------
+
     # enc_a
     enc_a = E_attr(3, args.N_a).cuda()
     load_ckpt(enc_a, args.ckpt_path, model_name='enc_a')
     nerf_coarse = NeRF('coarse',
-                        in_channels_xyz=6*args.N_emb_xyz+3,
-                        in_channels_dir=6*args.N_emb_dir+3).cuda()
+                        in_channels_xyz=in_channels_xyz,
+                        in_channels_dir=in_channels_dir).cuda()
     models = {'coarse': nerf_coarse}
     nerf_fine = NeRF('fine',
-                     in_channels_xyz=6*args.N_emb_xyz+3,
-                     in_channels_dir=6*args.N_emb_dir+3,
+                     in_channels_xyz=in_channels_xyz,
+                     in_channels_dir=in_channels_dir,
                      encode_appearance=args.encode_a,
                      in_channels_a=args.N_a).cuda()
 
@@ -208,6 +245,7 @@ if __name__ == "__main__":
     define_camera(dataset)
     if dir_name.split('_')[-1] == 'gate':
         define_poses_brandenburg_gate(dataset)
+        print("Entro en _gate\n")
     elif dir_name.split('_')[-1] == 'fountain':
         define_poses_trevi_fountain(dataset)
     else:

@@ -1,5 +1,7 @@
 import os
 
+import torch
+
 from numpy.lib.utils import who
 from opt import get_opts
 import torch
@@ -13,7 +15,7 @@ from math import sqrt
 # models
 from models.nerf import *
 from models.rendering import *
-from models.networks import E_attr, implicit_mask
+from models.networks import E_attr, implicit_mask ### E_attr es para la red neuronal de 
 
 # optimizer, scheduler, visualization
 from utils import *
@@ -33,40 +35,75 @@ from datasets import global_val
 
 import random
 
+
+
+
 class NeRFSystem(LightningModule):
     def __init__(self, hparams):
         super().__init__()
         self.hparams = hparams
         self.loss = loss_dict['hanerf'](hparams, coef=1)
 
+        ## ------------- Parte que cambia el embedding según argumento de entrada -------------
+
+        embedding_funcs_dict = { ## Diccionario de tipos de embedding.
+            'sin_cos': [torch.sin, torch.cos],
+            'sin_4': [torch.sin,torch.cos, sin_shifted_pi, sin_shifted_3pi2],
+            'tri': [tri],
+            'tri_2': [tri, tri_shifted],
+            'square': [square],
+            'square_2': [square, square_shifted],
+            'tri_square': [tri, square], 
+            'tri_3': [tri, tri_shifted, tri_shifted_pi], 
+            'square_3': [square, square_shifted, square_shifted_pi], 
+            'sin_tri_square': [torch.sin, tri, square],
+            'sin_tri_tri_2': [torch.sin, tri, tri_shifted],
+            'sin_tri': [torch.sin, tri],
+            'sin_tri_4': [torch.sin,torch.cos,tri,tri_shifted],
+            'tri_4': [tri, tri_shifted, tri_shifted_pi, tri_shifted_3pi2]
+        }
+            ## Error si pones una codificacion incorrecta
+        if hparams.embedding_type not in embedding_funcs_dict:
+            raise ValueError(f"Tipo de embedding '{hparams.embedding_type}' no reconocido. Debe ser uno de {list(embedding_funcs_dict.keys())}")
+
+            ## Seleccionamos las funciones que usamos de acuerdo al parametro.
+        funcs_xyz = embedding_funcs_dict[hparams.embedding_type]
+
         self.models_to_train = []
-        self.embedding_xyz = PosEmbedding(hparams.N_emb_xyz-1, hparams.N_emb_xyz)
-        self.embedding_dir = PosEmbedding(hparams.N_emb_dir-1, hparams.N_emb_dir)
+        self.embedding_xyz = PosEmbedding(hparams.N_emb_xyz-1, hparams.N_emb_xyz, funcs=funcs_xyz) ## Codifica la posición del rayo 
+        self.embedding_dir = PosEmbedding(hparams.N_emb_dir-1, hparams.N_emb_dir, funcs=funcs_xyz) ## Codifica la posición de la camara
         self.embedding_uv = PosEmbedding(10-1, 10)
 
         self.embeddings = {'xyz': self.embedding_xyz,
-                           'dir': self.embedding_dir}
+                           'dir': self.embedding_dir} ## Diccionario de las posiciones codificadas.
 
         if hparams.encode_a:
             self.enc_a = E_attr(3, hparams.N_a)
             self.models_to_train += [self.enc_a]
             self.embedding_a_list = [None] * hparams.N_vocab
 
+        n_funcs = len(funcs_xyz) ## Guardamos el numero de funciones de transformación que vamos a utilizar.
+        in_channels_xyz = 3 + 3 * n_funcs * hparams.N_emb_xyz ## Estos son los valores del numero de posiciones tras codificar.
+        in_channels_dir = 3 + 3 * n_funcs * hparams.N_emb_dir
+
         self.nerf_coarse = NeRF('coarse',
-                                in_channels_xyz=6*hparams.N_emb_xyz+3,
-                                in_channels_dir=6*hparams.N_emb_dir+3)
+                                in_channels_xyz=in_channels_xyz,
+                                in_channels_dir=in_channels_dir)
+
         self.models = {'coarse': self.nerf_coarse}
 
         if hparams.N_importance > 0:
             self.nerf_fine = NeRF('fine',
-                                  in_channels_xyz=6*hparams.N_emb_xyz+3,
-                                  in_channels_dir=6*hparams.N_emb_dir+3,
+                                in_channels_xyz=in_channels_xyz,
+                                in_channels_dir=in_channels_dir,
                                   encode_appearance=hparams.encode_a,
                                   in_channels_a=hparams.N_a,
                                   encode_random=hparams.encode_random)
 
             self.models['fine'] = self.nerf_fine
         self.models_to_train += [self.models]
+
+        ### -----------------------------------------------------------------------------------
 
         if hparams.use_mask:
             self.implicit_mask = implicit_mask()
@@ -159,6 +196,7 @@ class NeRFSystem(LightningModule):
     def configure_optimizers(self):
         self.optimizer = get_optimizer(self.hparams, self.models_to_train)
         scheduler = get_scheduler(self.hparams, self.optimizer)
+        scheduler = {'scheduler': scheduler, 'interval': 'step'}
         return [self.optimizer], [scheduler]
 
     def train_dataloader(self):
@@ -342,5 +380,9 @@ def main(hparams):
     trainer.fit(system)
 
 if __name__ == '__main__':
+    torch.cuda.empty_cache()
     hparams = get_opts()
     main(hparams)
+
+
+
