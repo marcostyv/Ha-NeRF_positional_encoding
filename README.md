@@ -1,5 +1,5 @@
-# Ha-NeRF_positiona_encoding
-This repository is a modified version of the official Ha-NeRF implementation, adapted as part of a Bachelor's Thesis project by Marcos Granero at the University of Málaga.
+# Ha-NeRF_positional_encoding
+This repository is a modified version of the official Ha-NeRF implementation, adapted as part of a Bachelor's Thesis project by me (Marcos Granero) at the University of Málaga.
 The main objective of this work is to evaluate the impact of different positional encoding functions on the performance of Ha-NeRF. To achieve this, several core files have been modified to support custom embedding types that can improve the network's learning capabilities and the visual quality of the rendered images.
 This project is intended for academic purposes and is based on the original code by Xingyu Chen et al.
 
@@ -143,6 +143,7 @@ If you find this modified version of Ha-NeRF useful for your research or academi
 }
 ```
 Also consider citing this modified version:
+```bibitex
 @misc{MarcosGranero2025hanerfPositionalEncoding,
   author       = {Marcos Granero},
   title        = {Ha-NeRF\_positional\_encoding: Modified Ha-NeRF with support for custom positional encodings},
@@ -150,7 +151,7 @@ Also consider citing this modified version:
   howpublished = {\url{https://github.com/marcostyv/Ha-NeRF_positional_encoding}},
   note         = {Bachelor's Thesis, University of Málaga}
 }
-
+```
 
 # Acknowledge
 This repository is based on the official implementation of Ha-NeRF ([Ha-NeRF](https://github.com/rover-xingyu/Ha-NeRF)), which in turn builds upon the PyTorch implementation of NeRF in the Wild ([NeRF-W](https://github.com/kwea123/nerf_pl/tree/nerfw/)). We appreciate all the contributors.
