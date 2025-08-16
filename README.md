@@ -145,12 +145,12 @@ If you find this modified version of Ha-NeRF useful for your research or academi
 Also consider citing this modified version:
 ```bibitex
 @misc{MarcosGranero2025hanerfPositionalEncoding,
-  author       = {Marcos Granero},
-  title        = {Ha-NeRF\_positional\_encoding: Modified Ha-NeRF with support for custom positional encodings},
-  year         = {2025},
-  publisher = {GitHub}
-  howpublished = {\url{https://github.com/marcostyv/Ha-NeRF_positional_encoding}},
-  note         = {Bachelor's Thesis, University of Málaga}
+  author={Marcos Granero},
+  title={Ha-NeRF\_positional\_encoding: Modified Ha-NeRF with support for custom positional encodings},
+  year={2025},
+  publisher={GitHub},
+  howpublished={\url{https://github.com/marcostyv/Ha-NeRF_positional_encoding}},
+  note={Bachelor's Thesis, University of Málaga}
 }
 ```
 
