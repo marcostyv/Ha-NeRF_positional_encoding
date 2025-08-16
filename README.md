@@ -148,6 +148,7 @@ Also consider citing this modified version:
   author       = {Marcos Granero},
   title        = {Ha-NeRF\_positional\_encoding: Modified Ha-NeRF with support for custom positional encodings},
   year         = {2025},
+  publisher = {GitHub}
   howpublished = {\url{https://github.com/marcostyv/Ha-NeRF_positional_encoding}},
   note         = {Bachelor's Thesis, University of Málaga}
 }
@@ -155,4 +156,3 @@ Also consider citing this modified version:
 
 # Acknowledge
 This repository is based on the official implementation of Ha-NeRF ([Ha-NeRF](https://github.com/rover-xingyu/Ha-NeRF)), which in turn builds upon the PyTorch implementation of NeRF in the Wild ([NeRF-W](https://github.com/kwea123/nerf_pl/tree/nerfw/)). We appreciate all the contributors.
-.
